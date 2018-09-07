@@ -2,6 +2,7 @@
   <div class="container is-fluid">
     <div class="columns" id="d_columns">
       <div class="column" id="d_column1">
+        <round-display :round="round"/>
       </div>
       <div class="column" id="d_column2">
         <points-box :teams="teams" :useLargeText="true"/>
@@ -13,19 +14,24 @@
 <script>
 import EventBus from '@/event-bus'
 import PointsBox from '@/components/parts/PointsBox'
+import RoundDisplay from '@/components/parts/RoundDisplay'
 
 export default {
   name: 'DisplayScreen',
-  components: { PointsBox },
+  components: { PointsBox, RoundDisplay },
   data: function () {
     return {
+      round: null,
       teams: []
     }
   },
   mounted: function () {
     var self = this
+
+    // get sessions
     EventBus.$on('say-session-data', (session) => {
       self.teams = session.teams
+      self.round = session.round
     })
     EventBus.$emit('request-session-data')
   }
