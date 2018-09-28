@@ -1,5 +1,5 @@
 <template>
-  <div class="card" v-bind:class="{ 'large-text': useLargeText }">
+  <div class="card">
     <div class="card-content">
       <div class="content has-text-centered">
         <template v-if="round === null">

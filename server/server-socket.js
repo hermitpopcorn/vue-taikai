@@ -121,6 +121,54 @@ wsServer.on('request', function(request) {
           clients[i].send(json);
         }
       }
+    } else
+    // when a server sends something
+    if(message.type == 'serve') {
+      // broadcast message to users with same session
+      var json = JSON.stringify(message.item);
+      for(let i in clients) {
+        if(clients.hasOwnProperty(i)) {
+          // next if either clients doesn't have a session code or mode
+          if(typeof clients[i].sessionCode == 'undefined' || typeof clients[selfIndex].sessionCode == 'undefined' ||
+            typeof clients[i].mode == 'undefined' || typeof clients[selfIndex].mode == 'undefined') {
+            continue;
+          }
+          // next if the session code isn't the same
+          if(clients[i].sessionCode != clients[selfIndex].sessionCode) {
+            continue;
+          }
+          // next if the client isn't a control
+          if(clients[i].mode != "control") {
+            continue;
+          }
+          // send message to the client
+          clients[i].send(json);
+        }
+      }
+    } else
+    // when a server sends a message
+    if(message.type == 'message') {
+      // broadcast message to users with same session
+      var json = JSON.stringify(message.message);
+      for(let i in clients) {
+        if(clients.hasOwnProperty(i)) {
+          // next if either clients doesn't have a session code or mode
+          if(typeof clients[i].sessionCode == 'undefined' || typeof clients[selfIndex].sessionCode == 'undefined' ||
+            typeof clients[i].mode == 'undefined' || typeof clients[selfIndex].mode == 'undefined') {
+            continue;
+          }
+          // next if the session code isn't the same
+          if(clients[i].sessionCode != clients[selfIndex].sessionCode) {
+            continue;
+          }
+          // next if the client isn't a server
+          if(clients[i].mode != "control") {
+            continue;
+          }
+          // send message to the client
+          clients[i].send(json);
+        }
+      }
     }
   });
 

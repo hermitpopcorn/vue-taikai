@@ -14,7 +14,8 @@ export default {
     return {
       connection: null,
       mode: null,
-      session: null
+      session: null,
+      question: null
     }
   },
   mounted: function () {
@@ -72,7 +73,7 @@ export default {
             self.$router.push({ name: 'DisplayScreen' })
           } else if (self.mode === 'control') {
             // also request the websocket server to notify servers there's a new control guy around
-            self.connection.send(JSON.stringify({ type: 'control', control: 'controllerAlert' }))
+            self.connection.send(JSON.stringify({ type: 'control', control: { action: null, message: 'controllerAlert' } }))
             console.log(`Kontrol terpasang pada sesi ${self.session.code}.`)
             self.$router.push({ name: 'ControlScreen' })
           }
@@ -105,6 +106,7 @@ export default {
 
     // point control
     EventBus.$on('control-point', (control) => {
+      if (self.mode === 'server') return false // not for servers
       // send websocket message, targeting a server
       self.connection.send(JSON.stringify({
         type: 'control',
@@ -117,12 +119,102 @@ export default {
 
     // round control
     EventBus.$on('control-round-set', (round) => {
+      if (self.mode === 'server') return false // not for servers
       // send websocket message, targeting a server
       self.connection.send(JSON.stringify({
         type: 'control',
         control: {
           action: 'round-set',
           round: round
+        }
+      }))
+    })
+
+    // pull question
+    EventBus.$on('question-pull', () => {
+      if (self.mode === 'server') return false // not for servers
+      // send websocket message, targeting a server
+      self.connection.send(JSON.stringify({
+        type: 'control',
+        control: {
+          action: 'question-pull'
+        }
+      }))
+    })
+    // get previous question
+    EventBus.$on('question-stepback', () => {
+      if (self.mode === 'server') return false // not for servers
+      // send websocket message, targeting a server
+      self.connection.send(JSON.stringify({
+        type: 'control',
+        control: {
+          action: 'question-stepback'
+        }
+      }))
+    })
+
+    // respond to question request
+    EventBus.$on('request2server-question-data', () => {
+      if (self.mode === 'server') return false // not for servers
+      // ask server to send it
+      self.connection.send(JSON.stringify({
+        type: 'control',
+        control: {
+          action: 'broadcast-question'
+        }
+      }))
+    })
+
+    // play/pause sound
+    EventBus.$on('question-playpause', () => {
+      if (self.mode === 'server') return false // not for servers
+      // send websocket message, targeting a server
+      self.connection.send(JSON.stringify({
+        type: 'control',
+        control: {
+          action: 'question-playpause'
+        }
+      }))
+    })
+    EventBus.$on('question-play', () => {
+      if (self.mode === 'server') return false // not for servers
+      // send websocket message, targeting a server
+      self.connection.send(JSON.stringify({
+        type: 'control',
+        control: {
+          action: 'question-play'
+        }
+      }))
+    })
+    EventBus.$on('question-pause', () => {
+      if (self.mode === 'server') return false // not for servers
+      // send websocket message, targeting a server
+      self.connection.send(JSON.stringify({
+        type: 'control',
+        control: {
+          action: 'question-pause'
+        }
+      }))
+    })
+    // show question
+    EventBus.$on('question-show-question', () => {
+      if (self.mode === 'server') return false // not for servers
+      // send websocket message, targeting a server
+      self.connection.send(JSON.stringify({
+        type: 'control',
+        control: {
+          action: 'question-show-question'
+        }
+      }))
+    })
+    // show options
+    EventBus.$on('question-show-options', () => {
+      if (self.mode === 'server') return false // not for servers
+      // send websocket message, targeting a server
+      self.connection.send(JSON.stringify({
+        type: 'control',
+        control: {
+          action: 'question-show-options'
         }
       }))
     })
@@ -134,7 +226,7 @@ export default {
 
       // parse JSON string
       message = JSON.parse(message.data)
-      console.log(message) // for debug purposes
+      console.log('DEBUG', 'RECEIVED MESSAGE', message) // for debug purposes
 
       // action messages
       if (typeof message.action !== 'undefined') {
@@ -159,7 +251,65 @@ export default {
           EventBus.$emit('say-session-data', self.session)
           self.updateSession()
         } else
+        // pull next question
+        if (message.action === 'question-pull' && self.mode === 'server') {
+          let qIndex = self.session.questionIndexes[self.session.round]
+          if (qIndex === null) { qIndex = 0 } else { qIndex = qIndex + 1 }
+          self.getQuestion(qIndex)
+        } else
+        // pull previous question
+        if (message.action === 'question-stepback' && self.mode === 'server') {
+          let qIndex = self.session.questionIndexes[self.session.round]
+          // only go to previous if a question is actually loaded and active,
+          // and if not, just get the current index
+          if (self.question !== null) {
+            if (qIndex === null || qIndex === 0) {
+              // do not go behind null
+              console.log('Tidak dapat mengambil pertanyaan sebelumnya!') // log for server
+              self.connection.send(JSON.stringify({ // message for peers
+                type: 'message',
+                message: 'Tidak dapat mengambil pertanyaan sebelumnya!'
+              }))
+              return false
+            }
+            qIndex = qIndex - 1
+          }
+          self.getQuestion(qIndex)
+        } else
+        // play/pause sound-based question
+        if (message.action === 'question-playpause' && self.mode === 'server') {
+          EventBus.$emit('question-playpause')
+        } else
+        if (message.action === 'question-play' && self.mode === 'server') {
+          EventBus.$emit('question-play')
+        } else
+        if (message.action === 'question-pause' && self.mode === 'server') {
+          EventBus.$emit('question-pause')
+        } else
+        // show question
+        if (message.action === 'question-show-question' && self.mode === 'server') {
+          EventBus.$emit('question-show-question')
+        } else
+        // show option
+        if (message.action === 'question-show-options' && self.mode === 'server') {
+          EventBus.$emit('question-show-options')
+        } else
+        // broadcast active question
+        if (message.action === 'broadcast-question' && self.mode === 'server') {
+          self.connection.send(JSON.stringify({
+            type: 'serve',
+            item: {
+              serve: 'question',
+              question: self.question
+            }
+          }))
+        } else
         // update session data
+        if (message.action === 'sessionUpdate' && self.mode === 'control') {
+          self.session = message.session
+          EventBus.$emit('say-session-data', self.session)
+        } else
+        // show message
         if (message.action === 'sessionUpdate' && self.mode === 'control') {
           self.session = message.session
           EventBus.$emit('say-session-data', self.session)
@@ -170,6 +320,16 @@ export default {
           self.connection.close()
           self.$router.push({ name: 'Blank' })
         }
+      } else
+      if (typeof message.serve !== 'undefined') {
+        if (message.serve === 'question' && self.mode === 'control') {
+          self.question = message.question
+          console.log(self.question)
+          EventBus.$emit('say-question', self.question)
+        }
+      } else {
+        // when it's just literally a message
+        alert(message)
       }
     },
 
@@ -187,6 +347,34 @@ export default {
         console.log(error)
         // sad log
         alert('Gagal menyimpan data sesi!')
+      })
+    },
+
+    getQuestion: function (index, stepback = false) {
+      var self = this
+
+      // fetch question from db
+      axios.get(`/questions/${self.session.round}/${index}`).then((response) => {
+        self.question = response.data
+        console.log(self.question)
+        EventBus.$emit('say-question', self.question)
+        // NOTE comment this line below for testing
+        self.session.questionIndexes[self.session.round] = index
+        self.updateSession()
+        self.connection.send(JSON.stringify({
+          type: 'serve',
+          item: {
+            serve: 'question',
+            question: self.question
+          }
+        }))
+      }).catch((error) => {
+        console.log('Tidak dapat mengambil pertanyaan selanjutnya!')
+        console.log(error)
+        self.connection.send(JSON.stringify({
+          type: 'message',
+          message: 'Tidak dapat mengambil pertanyaan selanjutnya!'
+        }))
       })
     }
   }

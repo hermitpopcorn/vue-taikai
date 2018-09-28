@@ -26,6 +26,8 @@ app.get('/', (req, res) => {
 app.use('/', express.static(path.join(__dirname, '..', 'vue/dist/')))
 // serve modules
 app.use('/modules', express.static(path.join(__dirname, '..', 'node_modules/')))
+// serve audio files
+app.use('/audio', express.static(path.join(__dirname, '..', 'audio/')))
 
 // get port
 app.get('/port', (req, res) => {
@@ -84,11 +86,15 @@ app.put('/sessions/:sessionCode', (req, res) => {
   })
 })
 
-// get questions by round and index
+// pull question by round and index
 app.get('/questions/:round/:index', (req, res) => {
-  db.collection('questions').find({ round: req.params.round, index: req.params.index }).toArray((err, docs) => {
+  db.collection('questions').findOne({ round: parseInt(req.params.round), index: parseInt(req.params.index) }, (err, doc) => {
     if(err) throw err
-    res.send(docs)
+    if(doc) {
+      res.send(doc)
+    } else {
+      res.send(404)
+    }
   })
 })
 

@@ -3,7 +3,7 @@
 // Load environment variables
 require('dotenv').config();
 
-const fs = require('fs'), Binary = require('mongodb').Binary, path = require('path');
+const fs = require('fs'), Binary = require('mongodb').Binary, path = require('path'), FileReader = require('filereader'), freader = new FileReader();
 
 function traverse(dir, done) {
   let results = [];
@@ -56,14 +56,15 @@ traverse("audio", (err, filenames) => {
         console.log("Memasukkan pertanyaan...");
 
         for(let filename of filenames) {
-          let splitFilename = filename.replace('\\', '/').split('/');
-          let bson = Binary(fs.readFileSync('audio/' + filename));
+          if(path.extname(filename) !== '.mp3') continue
+          let splitFilename = filename.replace('\\', '/').split('_');
           let data = {
             category: "Tebak Lagu",
             round: 2,
-            difficulty: splitFilename[0],
-            sound: bson,
-            correctAnswer: splitFilename[1]
+            difficulty: splitFilename[1],
+            file: filename,
+            correctAnswer: splitFilename[2],
+            index: parseInt(splitFilename[0])
           };
           client.db(dbName).collection('questions').insertOne(data, function(err, result) {
             if(err) throw err;
