@@ -39,19 +39,53 @@
                         <template v-if="!question.file">
                           <div class="columns">
                             <div class="column">
-                              <strong>{{ question.question }}</strong>
+                              <h3>
+                                [ Kategori: {{ question.category }} ]
+                                <template v-if="question.showOptions">
+                                  [ Soal Pilihan Ganda ]
+                                </template>
+                              </h3>
+                              <h2><strong v-html="question.question"></strong></h2>
                             </div>
                           </div>
-                          <div class="columns is-multiline">
-                            <div class="column is-one-fourth">
-                              <button class="button is-success is-large is-fullwidth">{{ question.correctAnswer }}</button>
+                          <template v-if="question.options">
+                            <div class="columns is-multiline">
+                              <template v-for="(option, index) in question.options">
+                                <div class="column is-one-fourth" v-bind:key="index">
+                                  <button class="button is-large is-fullwidth" :class="{ 'is-success': index === question.correctAnswer }">
+                                    {{ ['A', 'B', 'C', 'D'][index] }}. <span v-html="option"></span>
+                                  </button>
+                                </div>
+                              </template>
                             </div>
-                            <template v-for="(wrongAnswer, index) in question.wrongAnswers">
-                              <div class="column is-one-fourth" v-bind:key="index">
-                                <button class="button is-large is-fullwidth">{{ wrongAnswer }}</button>
+                          </template>
+                          <template v-if="typeof question.correctAnswer === 'boolean'">
+                            <div class="columns">
+                              <div class="column">
+                                <button class="button is-large is-fullwidth is-success" v-if="question.correctAnswer === true">Jawaban: O (Benar)</button>
+                                <button class="button is-large is-fullwidth is-danger" v-if="question.correctAnswer === false">Jawaban: X (Salah)</button>
+                              </div>
+                            </div>
+                          </template>
+                          <div class="columns">
+                            <template v-if="question.showQuestion">
+                              <div class="column is-narrow">
+                                Untuk soal ini, tampilkan <b>pertanyaan</b> di layar.
+                              </div>
+                            </template>
+                            <template v-if="question.showOptions">
+                              <div class="column is-narrow">
+                                Untuk soal ini, tampilkan <b>pilihan jawaban</b> di layar.
                               </div>
                             </template>
                           </div>
+                          <template v-if="question.note">
+                            <div class="columns">
+                              <div class="column">
+                                <span v-html="question.note"></span>
+                              </div>
+                            </div>
+                          </template>
                         </template>
                         <template v-if="question.file">
                           Now playing: {{ question.correctAnswer }}
@@ -79,15 +113,20 @@
                             <div class="column">
                               <div class="button is-link is-fullwidth" v-on:click="showQuestion()">Tampilkan Soal</div>
                             </div>
-                            <div class="column">
-                              <div class="button is-link is-fullwidth" v-on:click="showOptions()">Tampilkan Pilihan Jawaban</div>
-                            </div>
+                            <template v-if="question.options">
+                              <div class="column">
+                                <div class="button is-link is-fullwidth" v-on:click="showOptions()">Tampilkan Pilihan Jawaban</div>
+                              </div>
+                            </template>
                           </template>
                         </template>
                         <div class="column">
                           <div class="button is-primary is-fullwidth" v-on:click="nextQuestion()">Next &raquo;</div>
                         </div>
                       </div>
+                    </div>
+                    <div class="column">
+                      <div class="button is-link is-fullwidth" v-on:click="ding()">Keluarkan Suara Aba-Aba</div>
                     </div>
                   </div>
                 </div>
@@ -97,7 +136,7 @@
         </div>
       </div>
       <div class="column">
-        <points-box :teams="teams" :showButtons="true"/>
+        <points-box :teams="teams" :showButtons="true" :reverseTeams="true" />
       </div>
     </div>
   </div>
@@ -133,6 +172,40 @@ export default {
       self.question = question
     })
     EventBus.$emit('request2server-question-data')
+
+    // keyboard shortcuts
+    window.addEventListener('keydown', (e) => {
+      // Space button = pause sound
+      if (e.keyCode === 32) {
+        e.preventDefault()
+        self.pauseSound()
+      } else
+      // P = ding
+      if (e.keyCode === 80) {
+        e.preventDefault()
+        self.ding()
+      } else
+      // Left arrow = prev
+      if (e.keyCode === 37) {
+        e.preventDefault()
+        self.prevQuestion()
+      } else
+      // Right arrow = next
+      if (e.keyCode === 39) {
+        e.preventDefault()
+        self.nextQuestion()
+      } else
+      // L = show options
+      if (e.keyCode === 76) {
+        e.preventDefault()
+        self.showOptions()
+      } else
+      // J = show question
+      if (e.keyCode === 74) {
+        e.preventDefault()
+        self.showQuestion()
+      }
+    })
   },
   methods: {
     setRound: function (round) {
@@ -158,6 +231,9 @@ export default {
     },
     showOptions: function () {
       EventBus.$emit('question-show-options')
+    },
+    ding: function () {
+      EventBus.$emit('ding')
     }
   }
 }

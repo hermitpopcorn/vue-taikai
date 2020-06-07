@@ -1,9 +1,6 @@
 <template>
   <div class="container is-fluid">
     <div class="columns" id="d_columns">
-      <div class="column" id="d_column1">
-        <round-display :round="round"/>
-      </div>
       <div class="column" id="d_column2">
         <div class="columns" v-if="question">
           <div class="column">
@@ -12,7 +9,7 @@
                 <div class="content">
                   <!-- Question -->
                   <template v-if="showQuestion">
-                    <h1>{{ question.question }}</h1>
+                    <h1 class="question" v-html="question.question"></h1>
                   </template>
                   <template v-else>
                     <h1 class="has-text-centered">Simak pertanyaan baik-baik!</h1>
@@ -22,7 +19,12 @@
                     <div class="columns is-multiline">
                       <template v-for="(option, index) in question.options">
                         <div class="column is-half" v-bind:key="index">
-                          <button class="button is-large is-fullwidth">{{ option }}</button>
+                          <transition name="scale">
+                            <button class="button is-large is-fullwidth option" v-show="showOptionFlag[index]"
+                              :class="{ 'is-link': index === 0, 'is-success': index === 1, 'is-danger': index === 2, 'is-black': index === 3 }">
+                              {{ ['A', 'B', 'C', 'D'][index] }}.&nbsp;&nbsp;<span v-html="option"></span>
+                            </button>
+                          </transition>
                         </div>
                       </template>
                     </div>
@@ -42,24 +44,34 @@
         <points-box :teams="teams" :useLargeText="true"/>
       </div>
     </div>
+    <!-- Ding soound element -->
+    <audio ref="dinger" style="display: none">
+      <source src="static/audio/ding.mp3" type="audio/mp3"/>
+      Your browser does not support the audio element.
+    </audio>
   </div>
 </template>
 
 <script>
 import EventBus from '@/event-bus'
 import PointsBox from '@/components/parts/PointsBox'
-import RoundDisplay from '@/components/parts/RoundDisplay'
 
 export default {
   name: 'DisplayScreen',
-  components: { PointsBox, RoundDisplay },
+  components: { PointsBox },
   data: function () {
     return {
       round: null,
       teams: [],
       question: null,
       showQuestion: false,
-      showOptions: false
+      showOptions: false,
+      showOptionFlag: {
+        0: false,
+        1: false,
+        2: false,
+        3: false
+      }
     }
   },
   mounted: function () {
@@ -76,25 +88,8 @@ export default {
       // hide question & options by default
       self.showQuestion = false
       self.showOptions = false
-      // shuffle answer options
-      if (typeof question.correctAnswer !== 'undefined' && typeof question.wrongAnswers !== 'undefined') {
-        let options = question.wrongAnswers.slice(0) // clone array
-        options.push(question.correctAnswer)
-        // randomize
-        var currentIndex = options.length
-        var temporaryValue
-        var randomIndex
-        // While there remain elements to shuffle...
-        while (currentIndex !== 0) {
-          // Pick a remaining element...
-          randomIndex = Math.floor(Math.random() * currentIndex)
-          currentIndex -= 1
-          // And swap it with the current element.
-          temporaryValue = options[currentIndex]
-          options[currentIndex] = options[randomIndex]
-          options[randomIndex] = temporaryValue
-        }
-        question.options = options
+      for (let i in self.showOptionFlag) {
+        setTimeout(() => { self.$set(self.showOptionFlag, i, false) }, 10 * i)
       }
       self.question = question
       // load audio if audio question
@@ -131,6 +126,13 @@ export default {
     // on event: show options
     EventBus.$on('question-show-options', () => {
       self.showOptions = true
+      for (let i in self.showOptionFlag) {
+        setTimeout(() => { self.$set(self.showOptionFlag, i, true) }, 1000 * i)
+      }
+    })
+    // on event: play ding sound
+    EventBus.$on('ding', () => {
+      self.$refs.dinger.play()
     })
     // request session data
     EventBus.$emit('request-session-data')
@@ -153,11 +155,8 @@ section.section, div.container, div.columns {
   display: flex;
   flex-direction: column;
 }
-#d_column1 {
-  flex-basis: 15%;
-}
 #d_column2 {
-  flex-basis: 70%;
+  flex-basis: 85%;
 }
 #d_column3 {
   flex-basis: 15%;
@@ -165,5 +164,52 @@ section.section, div.container, div.columns {
 
 audio {
   width: 100%;
+}
+
+h1.question {
+  font-size: 3em;
+}
+
+button.option {
+  padding: 0;
+  font-size: 3em;
+  height: 100%;
+  white-space: normal;
+}
+
+.scale-enter-active {
+  -webkit-animation: scale-up-center 0.5s cubic-bezier(0.390, 0.575, 0.565, 1.000) both;
+  animation: scale-up-center 0.5s cubic-bezier(0.390, 0.575, 0.565, 1.000) both;
+}
+
+/* ----------------------------------------------
+ * Generated by Animista on 2018-9-30 17:28:24
+ * w: http://animista.net, t: @cssanimista
+ * ---------------------------------------------- */
+
+/**
+ * ----------------------------------------
+ * animation scale-up-center
+ * ----------------------------------------
+ */
+@-webkit-keyframes scale-up-center {
+0% {
+  -webkit-transform: scale(0.5);
+  transform: scale(0.5);
+}
+100% {
+  -webkit-transform: scale(1);
+  transform: scale(1);
+}
+}
+@keyframes scale-up-center {
+0% {
+  -webkit-transform: scale(0.5);
+  transform: scale(0.5);
+}
+100% {
+  -webkit-transform: scale(1);
+  transform: scale(1);
+}
 }
 </style>

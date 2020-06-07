@@ -1,6 +1,8 @@
 # taikai
 
-Aplikasi Cerdas Cermat.
+I made this for Fesbukan's Cerdas Cermat.
+
+It turned out quite well and it worked fine on site. Crazy how nothing breaks, I fuck things up bad usually
 
 ## Build Setup
 
@@ -8,14 +10,9 @@ Aplikasi Cerdas Cermat.
 # install dependencies
 npm install
 
-# serve with hot reload at localhost:8080
+# serve api at localhost:8080, accessible web server at localhost:80
 npm run dev
-
-# build for production with minification
-npm run build
-
-# build for production and view the bundle analyzer report
-npm run build --report
 ```
 
-For a detailed explanation on how things work, check out the [guide](http://vuejs-templates.github.io/webpack/) and [docs for vue-loader](http://vuejs.github.io/vue-loader).
+## Loading Questions into Database
+Use the scripts in scripts folder.

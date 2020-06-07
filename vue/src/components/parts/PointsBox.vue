@@ -3,7 +3,7 @@
     <div class="card-content">
       <div class="content">
         <nav class="level">
-          <div class="level-item has-text-centered" v-for="(team, index) in teams" v-bind:key="index">
+          <div class="level-item has-text-centered" v-for="(team, index) in (reverseTeams ? reversedTeams : teams)" v-bind:key="index">
             <div>
               <p class="heading">{{ team.name }}</p>
               <p class="title">{{ team.points }}</p>
@@ -40,23 +40,43 @@ export default {
     useLargeText: {
       type: Boolean,
       default: false
+    },
+    reverseTeams: {
+      type: Boolean,
+      default: false
     }
   },
   methods: {
     pointAction: function (type, teamIndex) {
-      EventBus.$emit('control-point', { type: type, team: teamIndex })
+      var self = this
+
+      if (!self.reverseTeams) {
+        EventBus.$emit('control-point', { type: type, team: teamIndex })
+      } else if (self.reverseTeams) {
+        EventBus.$emit('control-point', { type: type, team: (self.teams.length - 1) - teamIndex })
+      }
+    }
+  },
+  computed: {
+    reversedTeams () {
+      return this.teams.slice().reverse()
     }
   }
 }
 </script>
 
 <style scoped>
+.level-item .heading {
+  font-size: 1em;
+  margin-bottom: 0;
+}
+
 .large-text .level-item .heading {
-  font-size: 2.5em;
+  font-size: 2em;
   margin-bottom: 0;
 }
 .large-text .level-item .title {
-  font-size: 6em;
+  font-size: 5em;
   margin-bottom: 0;
 }
 </style>

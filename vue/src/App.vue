@@ -218,6 +218,17 @@ export default {
         }
       }))
     })
+    // show options
+    EventBus.$on('ding', () => {
+      if (self.mode === 'server') return false // not for servers
+      // send websocket message, targeting a server
+      self.connection.send(JSON.stringify({
+        type: 'control',
+        control: {
+          action: 'ding'
+        }
+      }))
+    })
   },
   methods: {
     // handle incoming websocket messages
@@ -265,14 +276,10 @@ export default {
           if (self.question !== null) {
             if (qIndex === null || qIndex === 0) {
               // do not go behind null
-              console.log('Tidak dapat mengambil pertanyaan sebelumnya!') // log for server
-              self.connection.send(JSON.stringify({ // message for peers
-                type: 'message',
-                message: 'Tidak dapat mengambil pertanyaan sebelumnya!'
-              }))
-              return false
+              qIndex = 0
+            } else {
+              qIndex = qIndex - 1
             }
-            qIndex = qIndex - 1
           }
           self.getQuestion(qIndex)
         } else
@@ -293,6 +300,10 @@ export default {
         // show option
         if (message.action === 'question-show-options' && self.mode === 'server') {
           EventBus.$emit('question-show-options')
+        } else
+        // ding
+        if (message.action === 'ding' && self.mode === 'server') {
+          EventBus.$emit('ding')
         } else
         // broadcast active question
         if (message.action === 'broadcast-question' && self.mode === 'server') {
@@ -386,7 +397,7 @@ body {
   background-image: url('/static/img/bg.svg')
 }
 
-html, body, #app {
+html, body {
   height: 100vh;
 }
 </style>
